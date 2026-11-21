@@ -14,7 +14,6 @@ def get_origin(url: str) -> str:
 
 async def csrf_protection(request: Request, call_next):
 
-    # print("I am in the middleware")
 
     if request.method in SAFE_METHODS:
         return await call_next(request)
@@ -35,7 +34,6 @@ async def csrf_protection(request: Request, call_next):
     # including Swagger UI during development.
     allowed_origins.add(get_origin(str(request.base_url)))
 
-    # print("this is the allowed origin", allowed_origins)
 
     if origin not in allowed_origins:
         return JSONResponse(

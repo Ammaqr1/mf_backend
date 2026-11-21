@@ -1,4 +1,31 @@
 pdfplumber>=0.11
 pymupdf>=1.24
-pytesseract>=0.3
+# pytesseract>=0.3
 Pillow>=10
+uvicorn[standard]
+
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy[asyncio]
+asyncpg
+alembic
+
+# Environment variables
+python-dotenv
+
+# Pydantic email validation
+pydantic[email]
+
+# Authentication and password hashing
+PyJWT
+pwdlib[argon2]
+bcrypt
+
+# PDF uploads
+python-multipart
+aiofiles
+
+# CUID generation
+cuid2

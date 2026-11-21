@@ -7,9 +7,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-origin = os.getenv("FRONTEND_ORIGINS").strip()
-
-
+origin = [
+    item.strip()
+    for item in os.getenv("FRONTEND_ORIGINS", "").split(",")
+    if item.strip()
+]
 
 
 app = FastAPI(

@@ -26,11 +26,15 @@ async def signup(
         email,
     )
 
+    print("existing credentials")
+
     if existing_credential:
         raise ValueError("Email already registered")
 
     # 2. Hash password
     password_hash = hash_password(password)
+
+    print("the password hash is ",password_hash)
 
     try:
         # 3. Create credential
@@ -41,12 +45,14 @@ async def signup(
             password_hash=password_hash,
         )
 
+
         # 4. Commit transaction
         await db.commit()
 
         # 5. Refresh object
         await db.refresh(credential)
 
+        print("the credentail",credential)
         return credential
 
     except IntegrityError:

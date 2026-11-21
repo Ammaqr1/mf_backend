@@ -72,8 +72,11 @@ class User(Base):
         String(255), nullable=True, unique=False, index=True
     )
     phone_no: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    pan: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    pan: Mapped[str | None] = mapped_column(String(10), nullable=True, unique=True)
     address: Mapped[str | None] = mapped_column(
+        String(455), nullable=True, unique=False, index=True
+    )
+    reference : Mapped[str | None] = mapped_column(
         String(455), nullable=True, unique=False, index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
@@ -110,7 +113,6 @@ class MutualFundHolding(Base):
 
     amc_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     folio_no: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
-    holder_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     scheme_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
     scheme_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -119,13 +121,15 @@ class MutualFundHolding(Base):
     scheme_code: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
 
     nav_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_updated_nav:Mapped[datetime] = mapped_column(
+        DateTime, nullable=True
+    )
     nav_inr: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     isin: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
-    pan: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     closing_units: Mapped[float | None] = mapped_column(Float, nullable=True)
-    total_cost_value_inr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    closing_unit_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(
@@ -155,8 +159,12 @@ class MutualFundTransaction(Base):
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     amount_inr: Mapped[float | None] = mapped_column(Float, nullable=True)
     units: Mapped[float | None] = mapped_column(Float, nullable=True)
-    price_inr: Mapped[float | None] = mapped_column(Float, nullable=True)
-    unit_balance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    nav: Mapped[float | None] = mapped_column(Float, nullable=True)
+    balance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    type: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    divident_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gift_folio: Mapped[float | None] = mapped_column(Float, nullable=True)
+
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 

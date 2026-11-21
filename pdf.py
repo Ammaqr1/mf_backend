@@ -606,12 +606,9 @@ def update_nav_details(schemes : list[Scheme]) -> list[Scheme]:
     schemes: list[Scheme] = schemes
     for scheme in schemes:
         print(scheme.scheme_name, f"isin is {scheme.isin}")
-        print()
         if scheme.scheme_name:
             q = re.sub(r'(?i)(?<=fund).*', '', scheme.scheme_name).strip()
             new_nav_data = filter_mf_search_based_on_isin(q, scheme.isin)
-            print("the new nav data", new_nav_data)
-            print()
             scheme.scheme_code = new_nav_data['meta']['scheme_code']
             scheme.scheme_type = new_nav_data['meta']['scheme_type']
             scheme.scheme_category = new_nav_data['meta']['scheme_category']
