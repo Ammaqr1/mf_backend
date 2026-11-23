@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 
 from sqlalchemy import (
     String,
-    Text,
     BigInteger,
     Float,
     Boolean,
@@ -55,6 +54,10 @@ class Credentials(Base):
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
     users: Mapped[list["User"]] = relationship(back_populates="credential")
+    documents: Mapped[list["Document"]] = relationship(
+        back_populates="credential",
+        cascade="all, delete-orphan",
+    )
 
     refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
         back_populates="credential",
@@ -96,6 +99,68 @@ class User(Base):
     holdings: Mapped[list["MutualFundHolding"]] = relationship(
         back_populates="user"
     )
+    documents: Mapped[list["Document"]] = relationship(back_populates="user")
+
+
+# uploaded statement PDF (file lives in S3, this row tracks it)
+class Document(Base):
+    __tablename__ = "documents"
+
+    id: Mapped[str] = mapped_column(
+        String(CUID_LEN), primary_key=True, default=generate_cuid
+    )
+
+    # who uploaded it (the logged-in account)
+    credential_id: Mapped[str] = mapped_column(
+        String(CUID_LEN),
+        ForeignKey("credentials.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # investor profile parsed from the PDF; unknown until the PDF is processed
+    user_id: Mapped[str | None] = mapped_column(
+        String(CUID_LEN),
+        ForeignKey("user.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    # id used in the S3 key (users/{credential_id}/documents/{document_id}.pdf)
+    s3_key: Mapped[str] = mapped_column(
+        String(512), nullable=False, unique=True, index=True
+    )
+    original_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    content_type: Mapped[str] = mapped_column(
+        String(100), nullable=False, default="application/pdf"
+    )
+    size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+
+    # optional password to open the PDF (needed to read it later, so not hashed)
+    password: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # None = PDF not encrypted / not checked, True = password works, False = missing or wrong
+    password_valid: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+
+    # pending -> verified -> processing -> processed | failed
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="pending", index=True
+    )
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # statement period read from the PDF
+    statement_from: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    statement_to: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now, onupdate=datetime.now
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    credential: Mapped["Credentials"] = relationship(back_populates="documents")
+    user: Mapped["User | None"] = relationship(back_populates="documents")
 
 
 class MutualFundHolding(Base):

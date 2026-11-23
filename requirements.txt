@@ -29,3 +29,5 @@ aiofiles
 
 # CUID generation
 cuid2
+
+boto3

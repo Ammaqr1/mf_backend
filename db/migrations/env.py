@@ -17,7 +17,13 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Import your existing SQLAlchemy Base and models
-from schema import Base, Credentials
+import sys
+from pathlib import Path
+
+# repo root (parent of the `app` package) so `app.*` imports resolve
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
+from app.db.schema import Base  # noqa: E402
 
 target_metadata = Base.metadata
 

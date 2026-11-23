@@ -33,9 +33,9 @@ def reset_tables():
     Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    if len(sys.argv) > 0:
+    if len(sys.argv) > 1:
         if sys.argv[1] == 'reset':
             reset_tables()
-        else:
-            create_tables()
+    else:
+        create_tables()
         
