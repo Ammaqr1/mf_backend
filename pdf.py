@@ -650,7 +650,7 @@ def save_all_in_db( user :User, schemes : list[Scheme],transactions : list[Trans
                 scheme_category= scheme.scheme_category,
                 sub_scheme_category= scheme.sub_scheme_category,
                 scheme_code= scheme.scheme_code,
-                nav_date= datetime.strptime(scheme.nav_date,"%d-%M-%Y"),
+                nav_date= datetime.strptime(scheme.nav_date,"%d-%m-%Y"),
                 nav_inr= float(scheme.nav_inr),
                 isin= scheme.isin,
                 pan= scheme.pan,
@@ -677,7 +677,7 @@ def extract(
     user = parse_personal(text)
     schemes, transactions = parse_schemes_and_txns(text, user)
     schemes = update_nav_details(schemes)
-    # new_date_time = datetime.strptime("03-11-2026","%d-%M-%Y" )
+    # new_date_time = datetime.strptime("03-11-2026","%d-%m-%Y" )
     save_all_in_db(user, schemes, transactions)
 
     write_csv(

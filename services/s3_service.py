@@ -51,6 +51,10 @@ def generate_upload_url(user_id: str):
     }
 
 
+def download_pdf(object_key: str) -> bytes:
+    return s3_client.get_object(Bucket=AWS_S3_BUCKET, Key=object_key)["Body"].read()
+
+
 def check_pdf_password(object_key: str, password: str | None) -> bool | None:
     """None = PDF is not encrypted, True = password opens it, False = missing/wrong."""
     import fitz  # pymupdf

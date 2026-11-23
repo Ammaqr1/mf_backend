@@ -31,3 +31,5 @@ aiofiles
 cuid2
 
 boto3
+# CAS statement parsing
+casparser

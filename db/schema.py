@@ -66,6 +66,10 @@ class Credentials(Base):
 
 class User(Base):
     __tablename__ = "user"
+    # one investor profile per PAN per logged-in account
+    __table_args__ = (
+        UniqueConstraint("credentials_id", "pan", name="uq_user_credential_pan"),
+    )
 
     id: Mapped[str] = mapped_column(
         String(CUID_LEN), primary_key=True, default=generate_cuid
@@ -75,12 +79,17 @@ class User(Base):
         String(255), nullable=True, unique=False, index=True
     )
     phone_no: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    pan: Mapped[str | None] = mapped_column(String(10), nullable=True, unique=True)
+    pan: Mapped[str | None] = mapped_column(String(10), nullable=True, index=True)
     address: Mapped[str | None] = mapped_column(
         String(455), nullable=True, unique=False, index=True
     )
-    reference : Mapped[str | None] = mapped_column(
-        String(455), nullable=True, unique=False, index=True
+    # the document (statement PDF) this investor was extracted from
+    reference: Mapped[str | None] = mapped_column(
+        String(CUID_LEN),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=False,
+        index=True,
     )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(
@@ -99,7 +108,7 @@ class User(Base):
     holdings: Mapped[list["MutualFundHolding"]] = relationship(
         back_populates="user"
     )
-    documents: Mapped[list["Document"]] = relationship(back_populates="user")
+    document: Mapped["Document | None"] = relationship(back_populates="users")
 
 
 # uploaded statement PDF (file lives in S3, this row tracks it)
@@ -117,14 +126,6 @@ class Document(Base):
         nullable=False,
         index=True,
     )
-    # investor profile parsed from the PDF; unknown until the PDF is processed
-    user_id: Mapped[str | None] = mapped_column(
-        String(CUID_LEN),
-        ForeignKey("user.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
-
     # id used in the S3 key (users/{credential_id}/documents/{document_id}.pdf)
     s3_key: Mapped[str] = mapped_column(
         String(512), nullable=False, unique=True, index=True
@@ -160,7 +161,8 @@ class Document(Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     credential: Mapped["Credentials"] = relationship(back_populates="documents")
-    user: Mapped["User | None"] = relationship(back_populates="documents")
+    # investor profiles (one per PAN) found in the PDF; empty until processed
+    users: Mapped[list["User"]] = relationship(back_populates="document")
 
 
 class MutualFundHolding(Base):
@@ -195,6 +197,12 @@ class MutualFundHolding(Base):
 
     closing_units: Mapped[float | None] = mapped_column(Float, nullable=True)
     closing_unit_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    opening_units: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_cost: Mapped[float | None] = mapped_column(Float, nullable=True)
+    market_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rta: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    rta_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    advisor: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     updated_at: Mapped[datetime] = mapped_column(
@@ -228,7 +236,7 @@ class MutualFundTransaction(Base):
     balance: Mapped[float | None] = mapped_column(Float, nullable=True)
     type: Mapped[str | None] = mapped_column(String(500), nullable=True)
     divident_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
-    gift_folio: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gift_folio: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

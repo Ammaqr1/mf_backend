@@ -12,6 +12,7 @@ from app.schemas.s3 import (
 )
 from app.services.document_service import (
     get_documents,
+    process_by_id,
     start_upload,
     update_password,
     verify_upload as verify_upload_service,
@@ -72,3 +73,21 @@ async def change_document_password(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.post("/{document_id}/process", response_model=DocumentResponse)
+async def process_document_endpoint(
+    document_id: str,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await process_by_id(db, str(current_user.id), document_id)
+    except ValueError as exc:
+        msg = str(exc)
+        code = (
+            status.HTTP_404_NOT_FOUND
+            if msg == "Uploaded document not found"
+            else status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=code, detail=msg)
