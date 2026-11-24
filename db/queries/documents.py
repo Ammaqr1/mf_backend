@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.schema import Document
@@ -50,6 +50,39 @@ async def get_document_by_id(
         Document.deleted_at.is_(None),
     )
     result = await db.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def list_documents_page(
+    db: AsyncSession,
+    credential_id: str | None,
+    limit: int,
+    offset: int,
+) -> tuple[list[Document], int]:
+    """credential_id=None lists every user's documents (admin view)."""
+    conds = [Document.deleted_at.is_(None)]
+    if credential_id is not None:
+        conds.append(Document.credential_id == credential_id)
+
+    total = (
+        await db.execute(select(func.count()).select_from(Document).where(*conds))
+    ).scalar_one()
+    rows = await db.execute(
+        select(Document)
+        .where(*conds)
+        .order_by(Document.created_at.desc(), Document.id)
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(rows.scalars().all()), total
+
+
+async def get_document_owner_id(db: AsyncSession, document_id: str) -> str | None:
+    result = await db.execute(
+        select(Document.credential_id).where(
+            Document.id == document_id, Document.deleted_at.is_(None)
+        )
+    )
     return result.scalar_one_or_none()
 
 

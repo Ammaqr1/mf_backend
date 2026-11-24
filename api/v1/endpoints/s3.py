@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependecies import get_current_user
 from app.db.db import get_db
+from app.db.queries.documents import get_document_owner_id, list_documents_page
+from app.schemas.common import Page, PageParams, make_page
 from app.schemas.s3 import (
     DocumentResponse,
     UploadUrlRequest,
@@ -11,7 +13,6 @@ from app.schemas.s3 import (
     VerifyUploadRequest,
 )
 from app.services.document_service import (
-    get_documents,
     process_by_id,
     start_upload,
     update_password,
@@ -24,12 +25,24 @@ router = APIRouter(
 )
 
 
-@router.get("", response_model=list[DocumentResponse])
+async def _owner_id(db: AsyncSession, current_user, document_id: str) -> str:
+    """Admins may act on any document; others only on their own."""
+    if current_user.is_admin:
+        owner = await get_document_owner_id(db, document_id)
+        if owner:
+            return owner
+    return str(current_user.id)
+
+
+@router.get("", response_model=Page[DocumentResponse])
 async def list_my_documents(
+    params: PageParams = Depends(),
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await get_documents(db, str(current_user.id))
+    owner = None if current_user.is_admin else str(current_user.id)
+    items, total = await list_documents_page(db, owner, params.per_page, params.offset)
+    return make_page(items, params, total)
 
 
 @router.post("/upload-url", response_model=UploadUrlResponse)
@@ -69,7 +82,7 @@ async def change_document_password(
 ):
     try:
         return await update_password(
-            db, str(current_user.id), document_id, payload.password
+            db, await _owner_id(db, current_user, document_id), document_id, payload.password
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
@@ -82,7 +95,9 @@ async def process_document_endpoint(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        return await process_by_id(db, str(current_user.id), document_id)
+        return await process_by_id(
+            db, await _owner_id(db, current_user, document_id), document_id
+        )
     except ValueError as exc:
         msg = str(exc)
         code = (
